@@ -1,16 +1,45 @@
-local Options = {
-    Keybind = 'Home', -- Tecla para abrir/fechar UI
-    Tempo = 1.2, -- Tempo entre mensagens
-    Rainbow = false, -- UI colorida (apenas decorativo)
 
-    Config = {
-        Min = 0, -- Número mínimo
-        Max = 99999999999, -- Número máximo
-        Mensagem = "Seu código é", -- Texto da mensagem
-        Separado = true, -- true = envia mensagem e número em mensagens diferentes
-        Repetir = false, -- true = repete automaticamente
-        Intervalo = 3 -- intervalo entre repetições (se Repetir = true)
-    }
-}
+return function(Options)
+    local UIS = game:GetService("UserInputService")
+    local RS = game:GetService("RunService")
+    local ChatEvent = game:GetService("ReplicatedStorage"):WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("SayMessageRequest")
 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/seuusuario/seurepo/main/AutoChat.lua"))(Options)
+    local UIVisible = true
+
+    local function enviarChat(msg)
+        ChatEvent:FireServer(msg, "All")
+    end
+
+    local function gerarENotificar()
+        local num = math.random(Options.Config.Min, Options.Config.Max)
+        if Options.Config.Mensagem ~= "" then
+            if Options.Config.Separado then
+                enviarChat(Options.Config.Mensagem)
+                wait(Options.Tempo)
+                enviarChat(tostring(num))
+            else
+                enviarChat(Options.Config.Mensagem .. " " .. tostring(num))
+            end
+        else
+            enviarChat(tostring(num))
+        end
+    end
+
+    if Options.Config.Repetir then
+        task.spawn(function()
+            while true do
+                gerarENotificar()
+                wait(Options.Config.Intervalo)
+            end
+        end)
+    else
+        gerarENotificar()
+    end
+
+    UIS.InputBegan:Connect(function(input, gameProcessed)
+        if not gameProcessed and input.KeyCode.Name == Options.Keybind then
+            UIVisible = not UIVisible
+            print("[AutoChat] Ativado:", UIVisible)
+        end
+    end)
+end
